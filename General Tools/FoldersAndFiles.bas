@@ -3,17 +3,53 @@ Attribute VB_Name = "FoldersAndFiles"
 Option Explicit
 
 '@Ignore FunctionReturnValueAlwaysDiscarded
-Public Function Unzip(ByVal Filepath As String) As String
+Public Function FolderUnzip(ByVal FolderPath As String, Optional ByVal UnzipFolderPath As String) As String
 
-    Dim UnzipFolderPath                As String
-    UnzipFolderPath = Filepath & " Unzip\"
+    If UnzipFolderPath = vbNullString Then UnzipFolderPath = FolderPath & " Unzip\"
     MakeDirectory DirectoryPath:=UnzipFolderPath
 
     Dim ShellApplication               As Object:        Set ShellApplication = CreateObject("Shell.Application")
-    ShellApplication.Namespace(CVar(UnzipFolderPath)).CopyHere ShellApplication.Namespace(Filepath & "\").Items
+    ShellApplication.Namespace(CVar(UnzipFolderPath)).CopyHere ShellApplication.Namespace(FolderPath & "\").Items
 
-    Unzip = UnzipFolderPath
+    FolderUnzip = UnzipFolderPath
 End Function
+
+Public Function FolderZip(ByVal FolderPathSource As String, Optional ByVal ZipPathDestination As String) As String
+    
+
+        If ZipPathDestination = vbNullString Then ZipPathDestination = DirectoryParent(DirectoryPath:=FolderPathSource) & "Temporary.zip"
+        FolderZip = ZipPathDestination
+        'Create empty Zip File
+        ZipCreateNewEmptyFile (ZipPathDestination)
+    
+        Dim ShellApplication               As Object:        Set ShellApplication = CreateObject("Shell.Application")
+        ShellApplication.Namespace(CStr(ZipPathDestination)).CopyHere ShellApplication.Namespace(CStr(FolderPathSource)).Items
+    
+    
+        'Keep script waiting until Compressing is done
+        On Error Resume Next
+        Do Until ShellApplication.Namespace(CStr(ZipPathDestination)).Items.Count = ShellApplication.Namespace(CStr(FolderPathSource)).Items.Count
+            Application.Wait (Now + TimeValue("0:00:01"))
+        Loop
+        On Error GoTo 0
+
+End Function
+
+Private Function ZipCreateNewEmptyFile(ByVal FilePath As String) As String
+    If Len(Dir(FilePath)) > 0 Then Kill FilePath
+    Open FilePath For Output As #1
+    Print #1, Chr$(80) & Chr$(75) & Chr$(5) & Chr$(6) & String(18, 0)
+    Close #1
+End Function
+
+Public Sub FileCreateCopy(ByVal Source As String, ByVal Destination As String, Optional ByVal Overwritefiles As Boolean = True)
+
+    Dim FSO                            As FileSystemObject
+    Set FSO = New FileSystemObject
+    MakeDirectory DirectoryPath:=DirectoryParent(DirectoryPath:=Destination)
+    FSO.CopyFile Source:=Source, Destination:=Destination, Overwritefiles:=Overwritefiles
+
+End Sub
 
 Public Sub MakeDirectory(ByVal DirectoryPath As String)
 
@@ -27,6 +63,39 @@ End Sub
 
 Private Function DirectoryParent(ByVal DirectoryPath As String) As String
     DirectoryParent = Left$(DirectoryPath, InStrRev(DirectoryPath, "\", , vbTextCompare) - 1)
+End Function
+
+Public Function FileExists(strFileName As String) As Boolean
+
+
+    If strFileName = "" Then
+        GoTo Exit_Point
+    End If
+
+    On Error Resume Next
+    Dim DirTest                        As String
+    DirTest = Dir(PathName:=strFileName, Attributes:=vbNormal)
+
+    If DirTest <> "" Then
+        FileExists = True
+    End If
+
+Exit_Point:
+
+    Exit Function
+
+End Function
+
+Public Function FolderExists(strDataFolder As String) As Boolean
+
+    On Error Resume Next
+    If Dir(PathName:=strDataFolder, Attributes:=vbDirectory) <> "" Then
+        If Err.Number = 0 Then
+            FolderExists = True
+        End If
+    End If
+
+
 End Function
 
 '__________________________________________________________________________________________________________________________________
@@ -52,61 +121,61 @@ End Function
 'Print - This writes a line of text to the file without quotations
 
 
-Sub TextFileCreate(ByVal Filepath As String, ByVal FileContent As String)
+Sub TextFileCreate(ByVal FilePath As String, ByVal FileContent As String)
 
     Dim TextFile                       As Integer          'Determine the next file number available for use by the FileOpen function
     TextFile = FreeFile
     
-    Open Filepath For Output As TextFile
+    Open FilePath For Output As TextFile
     Print #TextFile, FileContent
     Close TextFile
 
 End Sub
 
-Function TextFileGetContent(ByVal Filepath As String) As String
+Function TextFileGetContent(ByVal FilePath As String) As String
 
 
     Dim TextFile                       As Integer
     TextFile = FreeFile                                    'Determine the next file number available for use by the FileOpen function
 
-    Open Filepath For Input As TextFile
+    Open FilePath For Input As TextFile
     TextFileGetContent = Input(LOF(TextFile), TextFile)
     Close TextFile
-
+    Debug.Print TextFileGetContent
 End Function
 
-Sub TextFileFindReplace(ByVal Filepath As String, ByVal FindString As String, ByVal ReplaceString As String)
+Sub TextFileFindReplace(ByVal FilePath As String, ByVal FindString As String, ByVal ReplaceString As String)
 
     Dim FileContent                    As String
-    FileContent = TextFileGetContent(Filepath:=TextFileGetContent)
+    FileContent = TextFileGetContent(FilePath:=FilePath)
     FileContent = Replace(FileContent, FindString, ReplaceString)
 
-    TextFileCreate Filepath:=Filepath, FileContent:=FileContent
+    TextFileCreate FilePath:=FilePath, FileContent:=FileContent
 
 End Sub
 
-Sub TextFileAppend(ByVal Filepath As String, ByVal FileContent As String)
+Sub TextFileAppend(ByVal FilePath As String, ByVal FileContent As String)
 
     Dim TextFile                       As Integer
     TextFile = FreeFile
 
-    Open Filepath For Append As TextFile
+    Open FilePath For Append As TextFile
     Print #TextFile, FileContent
     Close TextFile
 
 End Sub
 
-Sub TextFileToArray(ByVal Filepath As String, Optional ByVal Delimiter As String)
+Sub TextFileToArray(ByVal FilePath As String, Optional ByVal Delimiter As String)
     'PURPOSE: Load an Array variable with data from a delimited text file
 
     Dim rw                             As Long
     Dim col                            As Long
 
     rw = 0
-      col = 0
+    col = 0
 
     Dim FileContent                    As String
-    FileContent = TextFileGetContent(Filepath:=Filepath)
+    FileContent = TextFileGetContent(FilePath:=FilePath)
 
     Dim LineArray()                    As String
     
@@ -116,6 +185,7 @@ Sub TextFileToArray(ByVal Filepath As String, Optional ByVal Delimiter As String
     Dim TempArray()                    As String
     
     'Read Data into an Array Variable
+    Dim x                              As Long
     For x = LBound(LineArray) To UBound(LineArray)
         If Len(Trim(LineArray(x))) <> 0 Then
             'Split up line of text by delimiter
@@ -128,6 +198,7 @@ Sub TextFileToArray(ByVal Filepath As String, Optional ByVal Delimiter As String
             ReDim Preserve DataArray(col, rw)
       
             'Load line of data into Array variable
+            Dim y                      As Long
             For y = LBound(TempArray) To UBound(TempArray)
                 DataArray(y, rw) = TempArray(y)
             Next y
@@ -139,5 +210,6 @@ Sub TextFileToArray(ByVal Filepath As String, Optional ByVal Delimiter As String
     Next x
 
 End Sub
+
 '__________________________________________________________________________________________________________________________________
 

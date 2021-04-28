@@ -16,9 +16,10 @@ Attribute VB_Exposed = False
 '@Folder("GIT")
 Option Explicit
 
-Private Sub UserForm_Initialize()
-    Dim CurrentVBProject               As VBIDE.VBProject
 
+Private Sub UserForm_Initialize()
+    Dim CurrentVBProject As VBIDE.VBProject
+    
     For Each CurrentVBProject In Application.VBE.VBProjects
         Debug.Print CurrentVBProject.Name
         If CurrentVBProject.Name <> "VBAProject" Then AddinSelection.AddItem pvargItem:=CurrentVBProject.Name
@@ -28,30 +29,31 @@ Private Sub UserForm_Initialize()
 
 End Sub
 
+
 Private Sub OkButton_Click()
-    Dim CurrentVBProject               As VBIDE.VBProject
+    Dim CurrentVBProject As VBIDE.VBProject
     Set CurrentVBProject = Application.VBE.VBProjects.Item(AddinSelection.Value)
-
-    Dim FolderPath                     As String
+    
+    Dim FolderPath As String
     FolderPath = ThisWorkbook.Path & "\" & CurrentVBProject.Name
-    If Not FoldersAndFiles.FolderExists(FolderPath:=FolderPath) Then FolderPath = GetFolderPath(DefaultPath:=FolderPath)
-
+    FolderPath = GetFolderPath(DefaultPath:=FolderPath)
     If FolderPath = vbNullString Then
         Debug.Print "Exited the export process, because folder path did not exist."
         Exit Sub
     End If
-
+    
     ExportAllModulesinVBProject CurrentVBProject:=CurrentVBProject, FolderPath:=FolderPath
-
+    
     Unload Me
 End Sub
 
+
 Private Sub ExportAllModulesinVBProject(ByVal CurrentVBProject As VBIDE.VBProject, ByVal FolderPath As String)
 
-    Dim CurrentModule                  As VBIDE.VBComponent
+    Dim CurrentModule As VBIDE.VBComponent
     For Each CurrentModule In CurrentVBProject.VBComponents
         If CurrentModule.Type <> vbext_ct_Document Then
-            Dim fileName               As String
+            Dim fileName As String
             fileName = CreateFileNameforModule(FolderPath:=FolderPath, CurrentModule:=CurrentModule)
             CurrentModule.Export fileName:=fileName
         End If
@@ -64,28 +66,28 @@ Private Sub CancelButton_Click()
 End Sub
 
 Private Function CreateFileNameforModule(ByVal FolderPath As String, ByVal CurrentModule As VBIDE.VBComponent) As String
-    Dim SubFolderIndicator             As String: SubFolderIndicator = ModuleFolderIndicator(CurrentModule:=CurrentModule)
+    Dim SubFolderIndicator As String: SubFolderIndicator = ModuleFolderIndicator(CurrentModule:=CurrentModule)
     If SubFolderIndicator <> vbNullString Then
         CreateFileNameforModule = FolderPath & "\" & SubFolderIndicator & "\" & CurrentModule.Name
         MakeDirectory DirectoryPath:=FolderPath & "\" & SubFolderIndicator
     Else
         CreateFileNameforModule = FolderPath & "\" & CurrentModule.Name
     End If
-
+    
     Select Case CurrentModule.Type
         Case vbext_ct_ClassModule: CreateFileNameforModule = CreateFileNameforModule & ".cls"
         Case vbext_ct_MSForm: CreateFileNameforModule = CreateFileNameforModule & ".frm"
         Case vbext_ct_StdModule: CreateFileNameforModule = CreateFileNameforModule & ".bas"
     End Select
-
+    
     Debug.Print CurrentModule.Name, ModuleFolderIndicator(CurrentModule:=CurrentModule)
 End Function
 
 Private Function ModuleFolderIndicator(ByVal CurrentModule As VBIDE.VBComponent) As String
-
+    
     With CurrentModule.CodeModule
-        Dim LineofCode                 As Long
-
+        Dim LineofCode As Long
+        
         For LineofCode = 1 To .CountOfLines
             Debug.Print .Lines(LineofCode, 1)
             If InStr(1, .Lines(LineofCode, 1), "@Folder", vbTextCompare) Then
@@ -97,10 +99,15 @@ Private Function ModuleFolderIndicator(ByVal CurrentModule As VBIDE.VBComponent)
             End If
         Next LineofCode
     End With
+    
+
 End Function
 
+
 Private Function GetFolderPath(ByVal DefaultPath As String) As String
-    Dim DefaultPathLocal               As String: DefaultPathLocal = DefaultPath
+    Dim DefaultPathLocal As String: DefaultPathLocal = DefaultPath
+     
+    
     With Application.FileDialog(msoFileDialogFolderPicker)
         If DefaultPathLocal <> vbNullString Then
             If Right$(DefaultPathLocal, 1) = "\" Then DefaultPathLocal = Left$(DefaultPathLocal, Len(DefaultPathLocal))
@@ -110,3 +117,17 @@ Private Function GetFolderPath(ByVal DefaultPath As String) As String
     End With
 End Function
 
+
+Private Sub MakeDirectory(ByVal DirectoryPath As String)
+
+Dim FSO As FileSystemObject
+Set FSO = New FileSystemObject
+
+If Not FSO.FolderExists(DirectoryParent(DirectoryPath:=DirectoryPath)) Then MakeDirectory DirectoryPath:=DirectoryParent(DirectoryPath:=DirectoryPath)
+If Not FSO.FolderExists(DirectoryPath) Then FSO.CreateFolder Path:=DirectoryPath
+
+End Sub
+
+Private Function DirectoryParent(ByVal DirectoryPath As String) As String
+    DirectoryParent = Left$(DirectoryPath, InStrRev(DirectoryPath, "\", , vbTextCompare) - 1)
+End Function

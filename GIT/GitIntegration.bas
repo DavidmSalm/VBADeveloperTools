@@ -1,34 +1,25 @@
 Attribute VB_Name = "GitIntegration"
-Option Explicit
 '@Folder("GIT")
 
 
-Public Sub ExportCodeSelection()
+Sub ExportCodeSelection()
     ExportCodeForm.Show
 End Sub
 
-Public Sub ImportCodeSelection()
+Sub ImportCodeSelection()
     ImportCodeForm.Show
-End Sub
-
-
-Public Sub UpdateXML()
-
-    ThisWorkbook.SaveCopyAs fileName:=ThisWorkbook.FullName & ".zip"
-    Unzip FilePath:=ThisWorkbook.FullName & ".zip"
-
 End Sub
 
 
 Public Function ValidateRibbonUIXMLFile(ByVal FilePath As String) As Boolean
     Dim FSO                            As FileSystemObject
     Set FSO = New FileSystemObject
-    Dim RibbonUIXML                            As String
-    RibbonUIXML = FSO.OpenTextFile(fileName:=FilePath).ReadAll
+    Dim XML                            As String
+    XML = FSO.OpenTextFile(fileName:=FilePath).ReadAll
 
     Dim MSXMLDocument                  As MSXML2.DOMDocument60
     Set MSXMLDocument = New MSXML2.DOMDocument60
-    MSXMLDocument.LoadXML bstrxml:=RibbonUIXML
+    MSXMLDocument.LoadXML bstrxml:=XML
     If Not IsValidRibbonUIXML(XMLDoc:=MSXMLDocument) Then
         MsgBox prompt:="XML for this file is not valid please refer to the immediate window for more details."
         ValidateRibbonUIXMLFile = False
@@ -42,7 +33,7 @@ Private Function IsValidRibbonUIXML(ByVal XMLDoc As MSXML2.DOMDocument60) As Boo
     Dim SchemaLocation                 As String: SchemaLocation = ThisWorkbook.Path & "\customui14.xsd"
     Const SchemaNamespace              As String = "http://schemas.microsoft.com/office/2009/07/cutomui"
 
-    Dim SchemaCache                    As xmlschemacache60: Set SchemaCache = New xmlschemacache60
+    Dim SchemaCache                    As New xmlschemacache60
 
 
     SchemaCache.Add NamespaceURI:=SchemaNamespace, Var:=LoadXMLFile(SchemaLocation:=SchemaLocation)
@@ -65,7 +56,7 @@ Private Function IsValidRibbonUIXML(ByVal XMLDoc As MSXML2.DOMDocument60) As Boo
 
 End Function
 
-Private Function LoadXMLFile(ByVal SchemaLocation As String) As MSXML2.DOMDocument60
+Private Function LoadXMLFile(SchemaLocation As String) As MSXML2.DOMDocument60
 
     Set LoadXMLFile = New MSXML2.DOMDocument60
 
@@ -77,4 +68,5 @@ Private Function LoadXMLFile(ByVal SchemaLocation As String) As MSXML2.DOMDocume
     End With
 
 End Function
+
 
