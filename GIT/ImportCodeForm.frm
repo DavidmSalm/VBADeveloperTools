@@ -1,14 +1,14 @@
 VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ImportCode 
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ImportCodeForm 
    Caption         =   "Select Addin to Export"
    ClientHeight    =   1905
    ClientLeft      =   120
    ClientTop       =   465
    ClientWidth     =   3780
-   OleObjectBlob   =   "ImportCode.frx":0000
+   OleObjectBlob   =   "ImportCodeForm.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
-Attribute VB_Name = "ImportCode"
+Attribute VB_Name = "ImportCodeForm"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
