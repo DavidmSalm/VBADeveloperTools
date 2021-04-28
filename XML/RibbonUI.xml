@@ -1,4 +1,4 @@
-<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui">
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
   <ribbon>
     <tabs>
       <tab id="CustomTab" label="My Tab">
@@ -11,9 +11,6 @@
             <item id="Zip2" label="81611" />
             <item id="Zip3" label="31561" />
           </comboBox>
-          <advanced>
-            <button id="Launcher1" screentip="My Launcher" onAction="MyLauncherMacro" />
-          </advanced>
         </group>
         <group id="MyGroup" label="My Group">
           <button id="Button" label="My Large Button" size="large" onAction="MyButtonMacro" />
