@@ -1,0 +1,25 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui">
+  <ribbon>
+    <tabs>
+      <tab id="CustomTab" label="My Tab">
+        <group id="SampleGroup" label="Sample Group">
+          <toggleButton id="ToggleButton1" size="large" label="Large Toggle Button" getPressed="MyToggleMacro" />
+          <checkBox id="CheckBox1" label="A CheckBox" screentip="This is a check box" onAction="MyCheckboxMacro" />
+          <editBox id="EditBox1" getText="MyTextMacro" label="My EditBox" onChange="MyEditBoxMacro" />
+          <comboBox id="Combo1" label="My ComboBox" onChange="MyComboBoxMacro">
+            <item id="Zip1" label="33455" />
+            <item id="Zip2" label="81611" />
+            <item id="Zip3" label="31561" />
+          </comboBox>
+          <advanced>
+            <button id="Launcher1" screentip="My Launcher" onAction="MyLauncherMacro" />
+          </advanced>
+        </group>
+        <group id="MyGroup" label="My Group">
+          <button id="Button" label="My Large Button" size="large" onAction="MyButtonMacro" />
+          <button id="Button2" label="My Normal Button" size="normal" onAction="MyOtherButtonMacro" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI> 
