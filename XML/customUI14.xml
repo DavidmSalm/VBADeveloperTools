@@ -1,0 +1,13 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+	<ribbon>
+		<tabs>
+			<tab idMso="TabDeveloper">
+				<group id="AddinControl" label="Add-in Control">
+					<button id="ImportCode" label="Import Code from Folder" onAction="ImportCodeSelection" />
+					<button id="ExportCode" label="Export Code to Folder" onAction="ExportCodeSelection" />
+					<button id="UpdateXML" label="ImportXML" />
+				</group>
+			</tab>
+		</tabs>
+	</ribbon>
+</customUI>
