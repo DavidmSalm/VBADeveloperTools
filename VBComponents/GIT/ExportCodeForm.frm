@@ -16,14 +16,14 @@ Attribute VB_Exposed = False
 '@Folder("GIT")
 Option Explicit
 
+Private CurrentVBProject As VBIDE.VBProject
 
 Private Sub UserForm_Initialize()
-    Dim CurrentVBProject As VBIDE.VBProject
-    
-    For Each CurrentVBProject In Application.VBE.VBProjects
-        Debug.Print CurrentVBProject.Name
-        If CurrentVBProject.Name <> "VBAProject" Then AddinSelection.AddItem pvargItem:=CurrentVBProject.Name
-    Next CurrentVBProject
+    Dim CurrentVBProjectLocal As VBIDE.VBProject
+    For Each CurrentVBProjectLocal In Application.VBE.VBProjects
+        Debug.Print CurrentVBProjectLocal.Name
+        If CurrentVBProjectLocal.Name <> "VBAProject" Then AddinSelection.AddItem pvargItem:=CurrentVBProjectLocal.Name
+    Next CurrentVBProjectLocal
     AddinSelection.AddItem pvargItem:="End of Add-ins"
     AddinSelection.ListIndex = 0
 
@@ -31,27 +31,28 @@ End Sub
 
 
 Private Sub OkButton_Click()
-    Dim CurrentVBProject As VBIDE.VBProject
-    Set CurrentVBProject = Application.VBE.VBProjects.Item(AddinSelection.Value)
-    
+    Dim CurrentVBProjectLocal As VBIDE.VBProject
+    Set CurrentVBProjectLocal = Application.VBE.VBProjects.Item(AddinSelection.Value)
+    Set CurrentVBProject = CurrentVBProjectLocal
     Dim FolderPath As String
-    FolderPath = ThisWorkbook.Path & "\" & CurrentVBProject.Name
+    FolderPath = ThisWorkbook.Path & "\" & CurrentVBProjectLocal.Name & "\VBComponents"
     FolderPath = GetFolderPath(DefaultPath:=FolderPath)
     If FolderPath = vbNullString Then
         Debug.Print "Exited the export process, because folder path did not exist."
         Exit Sub
     End If
     
-    ExportAllModulesinVBProject CurrentVBProject:=CurrentVBProject, FolderPath:=FolderPath
+    DeleteExistingModulesinFolder
+    ExportAllModulesinVBProject CurrentVBProjectLocal:=CurrentVBProjectLocal, FolderPath:=FolderPath
     
     Unload Me
 End Sub
 
 
-Private Sub ExportAllModulesinVBProject(ByVal CurrentVBProject As VBIDE.VBProject, ByVal FolderPath As String)
+Private Sub ExportAllModulesinVBProject(ByVal CurrentVBProjectLocal As VBIDE.VBProject, ByVal FolderPath As String)
 
     Dim CurrentModule As VBIDE.VBComponent
-    For Each CurrentModule In CurrentVBProject.VBComponents
+    For Each CurrentModule In CurrentVBProjectLocal.VBComponents
         If CurrentModule.Type <> vbext_ct_Document Then
             Dim fileName As String
             fileName = CreateFileNameforModule(FolderPath:=FolderPath, CurrentModule:=CurrentModule)
@@ -59,6 +60,29 @@ Private Sub ExportAllModulesinVBProject(ByVal CurrentVBProject As VBIDE.VBProjec
         End If
     Next CurrentModule
 
+End Sub
+
+Private Sub DeleteExistingModulesinFolder(ByVal FolderPath As String)
+    Dim FSO                            As FileSystemObject
+    Set FSO = New FileSystemObject
+    Dim Folder                         As Folder
+    Set Folder = FSO.GetFolder(FolderPath:=FolderPath)
+    
+    Dim SubFolder                      As Folder
+    
+    For Each SubFolder In Folder.SubFolders
+        DeleteExistingModulesinFolder FolderPath:=SubFolder.Path
+    Next SubFolder
+    
+    Dim CurrentFile                    As File
+    
+    For Each CurrentFile In Folder.Files
+        If Right$(CurrentFile.Path, 4) = ".bas" Or Right$(CurrentFile.Path, 4) = ".cls" Or Right$(CurrentFile.Path, 4) = ".frm" Then
+            Kill CurrentFile.Path
+            Debug.Print "Killed: ", CurrentFile.Path
+        End If
+    Next CurrentFile
+    
 End Sub
 
 Private Sub CancelButton_Click()
@@ -99,7 +123,7 @@ Private Function ModuleFolderIndicator(ByVal CurrentModule As VBIDE.VBComponent)
             End If
         Next LineofCode
     End With
-    
+    ModuleFolderIndicator = CurrentVBProject.Name
 
 End Function
 

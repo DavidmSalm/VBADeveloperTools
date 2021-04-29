@@ -129,6 +129,13 @@ Private Sub DeleteVBAModulesandUserForms()
         If CurrentVBComponent.Type <> vbext_ct_Document Then CurrentVBProject.VBComponents.Remove CurrentVBComponent
     Next CurrentVBComponent
 
+    For Each CurrentVBComponent In CurrentVBProject.VBComponents
+        If CurrentVBComponent.Type <> vbext_ct_Document Then 
+            debug.Print "Not all VB Components were deleted. Please review"
+            Debug.Assert False
+        End if
+    Next CurrentVBComponent
+
 End Sub
 
 Private Sub LoopThrougFolderandImportCode(ByVal FolderPath As String)

@@ -2,11 +2,11 @@ Attribute VB_Name = "GitIntegration"
 '@Folder("GIT")
 
 
-Sub ExportCodeSelection()
+Sub ExportCodeSelection(ByRef control as IRibbonControl)
     ExportCodeForm.Show
 End Sub
 
-Sub ImportCodeSelection()
+Sub ImportCodeSelection(ByRef control as IRibbonControl)
     ImportCodeForm.Show
 End Sub
 
