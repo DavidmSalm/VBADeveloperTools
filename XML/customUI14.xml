@@ -6,6 +6,16 @@
 					<button id="ImportCode" label="Import Code from Folder" onAction="ImportCodeSelection" />
 					<button id="ExportCode" label="Export Code to Folder" onAction="ExportCodeSelection" />
 					<button id="UpdateXML" label="ImportXML" />
+					<separator id="BestPractices"/>
+					<button id="BestPracticeReport" label="Best Practice Report"/>
+					<splitButton id="Debugging">
+						<menu id="DebuggingMenu">
+							<button id="ToggleDebugging" label="Toggle Debugging"/>
+							<button id="AddDebugging" label="Add Debugging to each module in File"/>
+						</menu>
+					</splitButton>
+					<separator id="Filetools"/>
+					<button id="ToggleIsAddIn" label="Toggle Is AddIn"/>
 				</group>
 			</tab>
 		</tabs>
