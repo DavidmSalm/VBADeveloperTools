@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ImportCodeForm 
-   Caption         =   "Select Addin to Export"
+   Caption         =   "Select Addin to Import"
    ClientHeight    =   1905
    ClientLeft      =   120
    ClientTop       =   465
@@ -45,7 +45,7 @@ Const CustomUI14RelType                As String = "http://schemas.microsoft.com
 Private Sub PopulateGlobalStrings()
     SourceWorkbookPath = CurrentVBProject.fileName
     WorkbookName = Mid(SourceWorkbookPath, InStrRev(SourceWorkbookPath, "\") + 1, Len(SourceWorkbookPath))
-    WorkbookBackupPath = SourceWorkbookPath & ".Archive." & GetTimestamp
+    WorkbookBackupPath = ThisWorkbook.Path & Application.PathSeparator & "zArchive" & Application.PathSeparator & CurrentVBProject.Name & ".Archive." & GetTimestamp
     WorkbookZippedPath = SourceWorkbookPath & ".zip"
     WorkbookUnzippedFolderPath = Mid(SourceWorkbookPath, 1, InStrRev(SourceWorkbookPath, "\")) & "Unzipped " & WorkbookName & ".zip" & Application.PathSeparator
     WorkbookXMLFolderPath = WorkbookUnzippedFolderPath & "customUI"
@@ -76,14 +76,14 @@ Private Sub OkButton_Click()
     Set CurrentVBProject = Application.VBE.VBProjects.Item(AddinSelection.Value)
     If CurrentVBProject.fileName = ThisWorkbook.FullName Then
         Dim ThisworkbookFullName As String: ThisworkbookFullName = ThisWorkbook.FullName
-        ThisWorkbook.SaveAs fileName:=ThisWorkbook.Path & "Temp.xlsm"
+        ThisWorkbook.SaveAs fileName:=ThisWorkbook.Path & Application.PathSeparator & GetTimestamp & "Temp.xlsm"
         Dim CurrentWorkbook As Workbook
         Set CurrentWorkbook = Workbooks.Open(fileName:=ThisworkbookFullName)
         Set CurrentVBProject = CurrentWorkbook.VBProject
     End If
     
     
-    SourceFolderPath = GetFolderPath(DefaultPath:=ThisWorkbook.Path)
+    SourceFolderPath = FoldersAndFiles.GetUserSelectedPath(DefaultPath:=ThisWorkbook.Path, FileType:=msoFileDialogFolderPicker)
     
     If Right$(SourceFolderPath, Len(SourceFolderPath) - InStrRev(SourceFolderPath, "\", , vbTextCompare)) <> CurrentVBProject.Name Then
         If MsgBox(prompt:="Folder name and VB project are not the same. Are you sure you want to import the code into this project?", Buttons:=vbYesNo) = vbNo Then
@@ -98,24 +98,22 @@ Private Sub OkButton_Click()
     UpdateSelectedVBProjectWithFileComponents
     If FoldersAndFiles.FileExists(strFileName:=SourceFolderPathXustomUIXMLPath) Or FoldersAndFiles.FileExists(strFileName:=SourceFolderPathXustomUI14XMLPath) Then UpdateXML
     
+    DeleteFilesandFolders
     Unload Me
 End Sub
+
+Private Sub DeleteFilesandFolders()
+
+
+End Sub
+
+
 
 Private Sub CancelButton_Click()
     Unload Me
 End Sub
 
-Private Function GetFolderPath(ByVal DefaultPath As String) As String
-    Dim DefaultPathLocal               As String: DefaultPathLocal = DefaultPath
-     
-    With Application.FileDialog(msoFileDialogFolderPicker)
-        If DefaultPathLocal <> vbNullString Then
-            If Right$(DefaultPathLocal, 1) = "\" Then DefaultPathLocal = Left$(DefaultPathLocal, Len(DefaultPathLocal))
-            .InitialFileName = DefaultPathLocal
-        End If
-        If .Show <> 0 Then GetFolderPath = .SelectedItems.Item(1)
-    End With
-End Function
+
 
 Private Sub UpdateSelectedVBProjectWithFileComponents()
     DeleteVBAModulesandUserForms
@@ -130,11 +128,12 @@ Private Sub DeleteVBAModulesandUserForms()
     Next CurrentVBComponent
 
     For Each CurrentVBComponent In CurrentVBProject.VBComponents
-        If CurrentVBComponent.Type <> vbext_ct_Document Then 
-            debug.Print "Not all VB Components were deleted. Please review"
+        If CurrentVBComponent.Type <> vbext_ct_Document Then
+            Debug.Print "Not all VB Components were deleted. Please review and rerun."
             Debug.Assert False
-        End if
+        End If
     Next CurrentVBComponent
+
 
 End Sub
 

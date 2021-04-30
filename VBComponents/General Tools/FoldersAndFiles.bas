@@ -57,11 +57,12 @@ Public Sub MakeDirectory(ByVal DirectoryPath As String)
     Set FSO = New FileSystemObject
 
     If Not FSO.FolderExists(DirectoryParent(DirectoryPath:=DirectoryPath)) Then MakeDirectory DirectoryPath:=DirectoryParent(DirectoryPath:=DirectoryPath)
-    If Not FSO.FolderExists(DirectoryPath) Then FSO.CreateFolder Path:=DirectoryPath
+    If Not FSO.FolderExists(DirectoryPath) Then FSO.CreateFolder Path:=GetDocLocalPath(docPath:=DirectoryPath)
 
 End Sub
 
-Private Function DirectoryParent(ByVal DirectoryPath As String) As String
+Public Function DirectoryParent(ByVal DirectoryPath As String) As String
+    DirectoryPath = GetDocLocalPath(docPath:=DirectoryPath)
     DirectoryParent = Left$(DirectoryPath, InStrRev(DirectoryPath, "\", , vbTextCompare) - 1)
 End Function
 
@@ -96,6 +97,24 @@ Public Function FolderExists(strDataFolder As String) As Boolean
     End If
 
 
+End Function
+
+Public Function GetUserSelectedPath(Optional ByVal DefaultPath As String, Optional FileType As MsoFileDialogType = msoFileDialogOpen) As String
+    If DefaultPath = "" Then DefaultPath = Application.DefaultFilePath
+     
+    With Application.FileDialog(FileType)
+        If DefaultPath <> vbNullString Then
+            If Right$(DefaultPath, 1) = "\" Then DefaultPath = Left$(DefaultPath, Len(DefaultPath))
+            .InitialFileName = DefaultPath
+        End If
+        If .Show <> 0 Then
+            GetUserSelectedPath = .SelectedItems.Item(1)
+        Else
+            Debug.Print "Process cancelled by user. "
+            End
+        End If
+    End With
+    
 End Function
 
 '__________________________________________________________________________________________________________________________________
@@ -213,3 +232,36 @@ End Sub
 
 '__________________________________________________________________________________________________________________________________
 
+Public Function GetTempFolder() As String
+    GetTempFolder = CreateObject("scripting.filesystemobject").GetSpecialFolder(2)
+End Function
+
+Public Function GetDocLocalPath(docPath As String) As String
+'Gel Local Path NOT URL to Onedrive
+Const strcOneDrivePart As String = "https://d.docs.live.net/"
+Dim strRetVal As String, bytSlashPos As Byte
+
+  strRetVal = docPath & "\"
+  If Left(LCase(docPath), Len(strcOneDrivePart)) = strcOneDrivePart Then 'yep, it's the OneDrive path
+    'locate and remove the "remote part"
+    bytSlashPos = InStr(Len(strcOneDrivePart) + 1, strRetVal, "/")
+    strRetVal = Mid(docPath, bytSlashPos)
+    'read the "local part" from the registry and concatenate
+    strRetVal = RegKeyRead("HKEY_CURRENT_USER\Environment\OneDrive") & strRetVal
+    strRetVal = Replace(strRetVal, "/", "\") 'slashes in the right direction
+    strRetVal = Replace(strRetVal, "%20", " ") 'a space is a space once more
+End If
+If Right(strRetVal, 1) = Application.PathSeparator Then strRetVal = Left(strRetVal, Len(strRetVal) - 1)
+GetDocLocalPath = strRetVal
+
+End Function
+
+Private Function RegKeyRead(i_RegKey As String) As String
+Dim myWS As Object
+
+  On Error Resume Next
+  'access Windows scripting
+  Set myWS = CreateObject("WScript.Shell")
+  'read key from registry
+  RegKeyRead = myWS.RegRead(i_RegKey)
+End Function
