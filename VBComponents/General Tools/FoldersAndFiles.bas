@@ -2,8 +2,8 @@ Attribute VB_Name = "FoldersAndFiles"
 '@Folder("General Tools")
 Option Explicit
 
-'@Ignore FunctionReturnValueAlwaysDiscarded
-Public Function FolderUnzip(ByVal FolderPath As String, Optional ByVal UnzipFolderPath As String) As String
+
+Public Sub FolderUnzip(ByVal FolderPath As String, Optional ByRef UnzipFolderPath As String)
 
     If UnzipFolderPath = vbNullString Then UnzipFolderPath = FolderPath & " Unzip\"
     MakeDirectory DirectoryPath:=UnzipFolderPath
@@ -12,9 +12,9 @@ Public Function FolderUnzip(ByVal FolderPath As String, Optional ByVal UnzipFold
     ShellApplication.Namespace(CVar(UnzipFolderPath)).CopyHere ShellApplication.Namespace(FolderPath & "\").Items
 
     FolderUnzip = UnzipFolderPath
-End Function
+End Sub
 
-Public Function FolderZip(ByVal FolderPathSource As String, Optional ByVal ZipPathDestination As String) As String
+Public Sub FolderZip(ByVal FolderPathSource As String, Optional ByRef ZipPathDestination As String)
     
 
         If ZipPathDestination = vbNullString Then ZipPathDestination = DirectoryParent(DirectoryPath:=FolderPathSource) & "Temporary.zip"
@@ -33,7 +33,7 @@ Public Function FolderZip(ByVal FolderPathSource As String, Optional ByVal ZipPa
         Loop
         On Error GoTo 0
 
-End Function
+End Sub
 
 Private Function ZipCreateNewEmptyFile(ByVal FilePath As String) As String
     If Len(Dir(FilePath)) > 0 Then Kill FilePath
@@ -57,11 +57,12 @@ Public Sub MakeDirectory(ByVal DirectoryPath As String)
     Set FSO = New FileSystemObject
 
     If Not FSO.FolderExists(DirectoryParent(DirectoryPath:=DirectoryPath)) Then MakeDirectory DirectoryPath:=DirectoryParent(DirectoryPath:=DirectoryPath)
-    If Not FSO.FolderExists(DirectoryPath) Then FSO.CreateFolder Path:=DirectoryPath
+    If Not FSO.FolderExists(DirectoryPath) Then FSO.CreateFolder Path:=GetDocLocalPath(docPath:=DirectoryPath)
 
 End Sub
 
-Private Function DirectoryParent(ByVal DirectoryPath As String) As String
+Public Function DirectoryParent(ByVal DirectoryPath As String) As String
+    DirectoryPath = GetDocLocalPath(docPath:=DirectoryPath)
     DirectoryParent = Left$(DirectoryPath, InStrRev(DirectoryPath, "\", , vbTextCompare) - 1)
 End Function
 
@@ -96,6 +97,24 @@ Public Function FolderExists(strDataFolder As String) As Boolean
     End If
 
 
+End Function
+
+Public Function GetUserSelectedPath(Optional ByVal DefaultPath As String, Optional FileType As MsoFileDialogType = msoFileDialogOpen) As String
+    If DefaultPath = "" Then DefaultPath = Application.DefaultFilePath
+     
+    With Application.FileDialog(FileType)
+        If DefaultPath <> vbNullString Then
+            If Right$(DefaultPath, 1) = "\" Then DefaultPath = Left$(DefaultPath, Len(DefaultPath))
+            .InitialFileName = DefaultPath
+        End If
+        If .Show <> 0 Then
+            GetUserSelectedPath = .SelectedItems.Item(1)
+        Else
+            Debug.Print "Process cancelled by user. "
+            End
+        End If
+    End With
+    
 End Function
 
 '__________________________________________________________________________________________________________________________________
@@ -213,3 +232,92 @@ End Sub
 
 '__________________________________________________________________________________________________________________________________
 
+Public Function GetTempFolder() As String
+    GetTempFolder = CreateObject("scripting.filesystemobject").GetSpecialFolder(2)
+End Function
+
+Public Function GetDocLocalPath(docPath As String) As String
+'Gel Local Path NOT URL to Onedrive
+Const strcOneDrivePart As String = "https://d.docs.live.net/"
+Dim strRetVal As String, bytSlashPos As Byte
+
+  strRetVal = docPath & "\"
+  If Left(LCase(docPath), Len(strcOneDrivePart)) = strcOneDrivePart Then 'yep, it's the OneDrive path
+    'locate and remove the "remote part"
+    bytSlashPos = InStr(Len(strcOneDrivePart) + 1, strRetVal, "/")
+    strRetVal = Mid(docPath, bytSlashPos)
+    'read the "local part" from the registry and concatenate
+    strRetVal = RegKeyRead("HKEY_CURRENT_USER\Environment\OneDrive") & strRetVal
+    strRetVal = Replace(strRetVal, "/", "\") 'slashes in the right direction
+    strRetVal = Replace(strRetVal, "%20", " ") 'a space is a space once more
+End If
+If Right(strRetVal, 1) = Application.PathSeparator Then strRetVal = Left(strRetVal, Len(strRetVal) - 1)
+GetDocLocalPath = strRetVal
+
+End Function
+
+Private Function RegKeyRead(i_RegKey As String) As String
+Dim myWS As Object
+
+  On Error Resume Next
+  'access Windows scripting
+  Set myWS = CreateObject("WScript.Shell")
+  'read key from registry
+  RegKeyRead = myWS.RegRead(i_RegKey)
+End Function
+
+Private Function AdresseLocal$(ByVal fullPath$)
+    'Finds local path for a OneDrive file URL, using environment variables of OneDrive
+    'Reference https://stackoverflow.com/questions/33734706/excels-fullname-property-with-onedrive
+    'Authors: Philip Swannell 2019-01-14, MatChrupczalski 2019-05-19, Horoman 2020-03-29, P.G.Schild 2020-04-02
+    Dim ii&
+    Dim iPos&
+    Dim oneDrivePath$
+    Dim endFilePath$
+    Dim NbSlash
+    
+    If Left$(fullPath, 8) = "https://" Then
+        If InStr(1, fullPath, "sharepoint.com/") <> 0 Then 'Commercial OneDrive
+            NbSlash = 4
+        Else                                               'Personal OneDrive
+            NbSlash = 2
+        End If
+        iPos = 8                                           'Last slash in https://
+        For ii = 1 To NbSlash
+            iPos = InStr(iPos + 1, fullPath, "/")
+        Next ii
+        endFilePath = Mid$(fullPath, iPos)
+        endFilePath = Replace(endFilePath, "/", Application.PathSeparator)
+        For ii = 1 To 3
+            oneDrivePath = Environ(Choose(ii, "OneDriveCommercial", "OneDriveConsumer", "OneDrive"))
+            If 0 < Len(oneDrivePath) Then Exit For
+        Next ii
+        AdresseLocal = oneDrivePath & endFilePath
+        While Len(Dir(AdresseLocal, vbDirectory)) = 0 And InStr(2, endFilePath, Application.PathSeparator) > 0
+            endFilePath = Mid(endFilePath, InStr(2, endFilePath, Application.PathSeparator))
+            AdresseLocal = oneDrivePath & endFilePath
+        Wend
+    Else
+        AdresseLocal = fullPath
+    End If
+End Function
+
+Public Function FileGetExtension(ByVal FilePath As String) As String
+    FileGetExtension = Right(FilePath, Len(FilePath) - InStrRev(FilePath, "."))
+End Function
+
+
+Public Sub FolderDelete(ByVal FolderPath As String)
+'Source: https://www.rondebruin.nl/win/s4/win004.htm
+    Dim FSO As Object
+    Set FSO = CreateObject("scripting.filesystemobject")
+
+    If Right(FolderPath, 1) = "\" Then
+        FolderPath = Left(FolderPath, Len(FolderPath) - 1)
+    End If
+
+    If FSO.FolderExists(FolderPath) = False Then Exit Sub
+
+    FSO.DeleteFolder FolderPath
+
+End Sub
