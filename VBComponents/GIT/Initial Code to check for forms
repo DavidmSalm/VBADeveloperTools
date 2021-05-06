@@ -1,0 +1,50 @@
+Public Function ShellRun() As String
+
+    'Run a shell command, returning the output as a string
+Const Path As String = "C:\Users\SALMDM\AppData\Roaming\Microsoft\AddIns\BDOx"
+    
+    Dim oShell As Object
+    Set oShell = CreateObject("WScript.Shell")
+
+    'run command
+    Dim oExec As Object
+    Dim oOutput As Object
+     oShell.CurrentDirectory = Path
+    Set oExec = oShell.Exec("git status")
+    Set oOutput = oExec.StdOut
+
+    'handle the results as they are written to and read from the StdOut object
+    Dim s As String
+    Dim sLine As String
+    Dim FRXDictionary As Dictionary
+    Set FRXDictionary = New Dictionary
+    Dim OutputDictionary As Dictionary
+    Set OutputDictionary = New Dictionary
+    
+    While Not oOutput.AtEndOfStream
+        sLine = oOutput.ReadLine
+        If sLine <> "" Then s = s & sLine & vbCrLf
+        OutputDictionary.Add Key:=sLine, Item:=sLine
+        If InStr(1, sLine, "modified:") <> 0 And InStr(1, sLine, ".frx") <> 0 Then
+            Debug.Print sLine
+            FRXDictionary.Add Key:=sLine, Item:=sLine
+            
+        End If
+    Wend
+
+    Dim frxkey As Variant
+    For Each frxkey In FRXDictionary.Keys()
+        Dim frmkey As String
+        frmkey = Replace(expression:=frxkey, Find:=".frx", Replace:=".frm")
+        If Not OutputDictionary.Exists(Key:=frmkey) Then
+            Debug.Print "removed:", frmkey
+            Set oExec = oShell.Exec("git checkout " & frxkey)
+        Else
+            Debug.Print "Kept:", frmkey
+        End If
+        
+    Next frxkey
+
+    ShellRun = s
+
+End Function
