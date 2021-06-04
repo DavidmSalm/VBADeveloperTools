@@ -11,14 +11,12 @@ Public Sub FolderUnzip(ByVal FolderPath As String, Optional ByRef UnzipFolderPat
     Dim ShellApplication               As Object:        Set ShellApplication = CreateObject("Shell.Application")
     ShellApplication.Namespace(CVar(UnzipFolderPath)).CopyHere ShellApplication.Namespace(FolderPath & "\").Items
 
-    FolderUnzip = UnzipFolderPath
 End Sub
 
 Public Sub FolderZip(ByVal FolderPathSource As String, Optional ByRef ZipPathDestination As String)
     
 
         If ZipPathDestination = vbNullString Then ZipPathDestination = DirectoryParent(DirectoryPath:=FolderPathSource) & "Temporary.zip"
-        FolderZip = ZipPathDestination
         'Create empty Zip File
         ZipCreateNewEmptyFile (ZipPathDestination)
     
