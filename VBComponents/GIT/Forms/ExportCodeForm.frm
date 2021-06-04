@@ -51,6 +51,7 @@ Private Sub OkButton_Click()
     
     LoopThrougFolderandDeleteCode FolderPath:=VBComponentBaseFolderPath
     ExportAllModulesinVBProject CurrentVBProjectLocal:=CurrentVBProject, FolderPath:=VBComponentBaseFolderPath
+    GitRestoreUnchangedForms RepositoryPath:=BaseFolderPath
     
     FoldersAndFiles.FileCreateCopy Source:=CurrentVBProject.fileName, Destination:=VBProjectCompiledFilePath
     Unload Me
@@ -142,3 +143,61 @@ Private Function ModuleFolderIndicator(ByVal CurrentModule As VBIDE.VBComponent)
     
 End Function
 
+Private Function GitRestoreUnchangedForms(ByVal RepositoryPath As String) As String
+   
+    Dim oShell As Object
+    Set oShell = CreateObject("WScript.Shell")
+    Dim waitOnReturn As Boolean: waitOnReturn = True
+    Dim windowStyle As Integer: windowStyle = 1
+
+    'run command
+    Dim oExec As Object
+    Dim oOutput As Object
+     oShell.CurrentDirectory = RepositoryPath
+    Set oExec = oShell.Exec("git status")
+    Set oOutput = oExec.StdOut
+
+    'handle the results as they are written to and read from the StdOut object
+    Dim s As String
+    Dim sLine As String
+    Dim FRXDictionary As Dictionary
+    Set FRXDictionary = New Dictionary
+    Dim OutputDictionary As Dictionary
+    Set OutputDictionary = New Dictionary
+    
+    While Not oOutput.AtEndOfStream
+        sLine = oOutput.ReadLine
+        If sLine <> "" Then
+        s = s & sLine & vbCrLf
+        If Not OutputDictionary.Exists(Key:=sLine) Then
+        OutputDictionary.Add Key:=sLine, Item:=sLine
+        If InStr(1, sLine, "modified:") <> 0 And InStr(1, sLine, ".frx") <> 0 Then
+            Debug.Print sLine
+            FRXDictionary.Add Key:=sLine, Item:=sLine
+            End If
+            End If
+        End If
+    Wend
+
+    Dim frxkey As Variant
+    For Each frxkey In FRXDictionary.Keys()
+        Dim frmkey As String
+        frmkey = Replace(expression:=frxkey, Find:=".frx", Replace:=".frm")
+        If Not OutputDictionary.Exists(Key:=frmkey) Then
+            Dim frxlocalfilepath As String
+            frxlocalfilepath = frxkey
+            frxlocalfilepath = Right(frxlocalfilepath, Len(frxlocalfilepath) - InStrRev(frxlocalfilepath, "modified:") - 9)
+            frxlocalfilepath = Trim(frxlocalfilepath)
+            Dim gitcommand As String
+            gitcommand = "git restore """ & frxlocalfilepath & """"
+            oShell.Run gitcommand, , waitOnReturn
+            Debug.Print "removed:", gitcommand
+        Else
+            Debug.Print "Kept:", frmkey
+        End If
+        
+    Next frxkey
+
+    GitRestoreUnchangedForms = s
+
+End Function
