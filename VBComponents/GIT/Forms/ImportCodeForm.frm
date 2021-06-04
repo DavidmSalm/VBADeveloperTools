@@ -13,6 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 '@Folder("GIT")
 '@IgnoreModule ArgumentWithIncompatibleObjectType
 #Const Debugging = True
@@ -20,6 +21,7 @@ Option Explicit
 
 Private ImportVBProject                     As VBIDE.VBProject
 Private WorkbookFullName                    As String
+Private WorkbookName                        As String
 
 Private ImportFolder                        As String
 Private ImportVBComponentFolder             As String
@@ -48,8 +50,6 @@ Private Sub PopulateGlobalStrings()
     TimeStamp = Format$(Now, "yyyymmddhhmmss") & Right$(Format$(Timer, "#0.00"), 2)
 
     WorkbookFullName = ImportVBProject.fileName
-
-    Dim WorkbookName                        As String
     WorkbookName = Mid$(WorkbookFullName, InStrRev(WorkbookFullName, "\") + 1, Len(WorkbookFullName))
 
     WorkbookArchiveFullName = ThisWorkbook.Path & Application.PathSeparator & "zArchive" & Application.PathSeparator & WorkbookName & "." & TimeStamp
@@ -117,6 +117,7 @@ Private Sub OkButton_Click()
     IfThisFileThenCreateTemp
 
     UpdateSelectedVBProjectWithFileComponents
+    Application.Workbooks(WorkbookName).Save
     If FoldersAndFiles.FileExists(strFileName:=ImportCustomUIFullName) Or FoldersAndFiles.FileExists(strFileName:=ImportCustomUI14FullName) Then UpdateXML
 
     DeleteFilesandFolders
