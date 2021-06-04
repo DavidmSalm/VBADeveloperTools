@@ -2,11 +2,11 @@ Attribute VB_Name = "GitIntegration"
 '@Folder("GIT")
 
 
-Sub ExportCodeSelection(ByRef control as IRibbonControl)
+Sub ExportCodeSelection(ByRef control As IRibbonControl)
     ExportCodeForm.Show
 End Sub
 
-Sub ImportCodeSelection(ByRef control as IRibbonControl)
+Sub ImportCodeSelection(ByRef control As IRibbonControl)
     ImportCodeForm.Show
 End Sub
 
@@ -68,5 +68,3 @@ Private Function LoadXMLFile(SchemaLocation As String) As MSXML2.DOMDocument60
     End With
 
 End Function
-
-
