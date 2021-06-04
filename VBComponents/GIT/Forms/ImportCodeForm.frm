@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ImportCodeForm 
    Caption         =   "Select Addin to Import"
-   ClientHeight    =   1911
-   ClientLeft      =   119
-   ClientTop       =   462
+   ClientHeight    =   1905
+   ClientLeft      =   120
+   ClientTop       =   465
    ClientWidth     =   3780
    OleObjectBlob   =   "ImportCodeForm.frx":0000
    StartUpPosition =   1  'CenterOwner
@@ -15,26 +15,24 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 '@Folder("GIT")
 '@IgnoreModule ArgumentWithIncompatibleObjectType
+#Const Debugging = True
 Option Explicit
 
-Private CurrentVBProject               As VBIDE.VBProject
+Private ImportVBProject                     As VBIDE.VBProject
+Private WorkbookFullName                    As String
 
-Private DestinationWorkbookPath        As String
+Private ImportFolder                        As String
+Private ImportVBComponentFolder             As String
 
+Private WorkbookArchiveFullName             As String
+Private ZipFullName                         As String
+Private UnzippedFolderPath                  As String
+Private UnzippedFolderCustomUIFullName      As String
+Private UnzippedFolderCustomUI14FullName    As String
+Private UnzippedFolderRelationshipFullName  As String
 
-Private BaseFolderPath                 As String
-Private VBComponentBaseFolderPath      As String
-
-Private WorkbookBackupPath             As String
-Private WorkbookZippedPath             As String
-Private WorkbookUnzippedFolderPath     As String
-Private CustomUIFilePath               As String
-Private CustomUI14FilePath             As String
-Private RelationshipFilePath           As String
-
-Private SourceFolderPathXustomUIXMLPath As String
-Private SourceFolderPathXustomUI14XMLPath As String
-
+Private ImportCustomUIFullName              As String
+Private ImportCustomUI14FullName            As String
 
 Private Enum XMLType
     XMLTypeCustomUI = 1
@@ -42,87 +40,104 @@ Private Enum XMLType
     XMLTypeCustomUI14 = 2
 End Enum
 
-Const CustomUIRelType                  As String = "http://schemas.microsoft.com/office/2006/relationships/ui/extensibility"
-Const CustomUI14RelType                As String = "http://schemas.microsoft.com/office/2007/relationships/ui/extensibility"
+Const CustomUIRelType                       As String = "http://schemas.microsoft.com/office/2006/relationships/ui/extensibility"
+Const CustomUI14RelType                     As String = "http://schemas.microsoft.com/office/2007/relationships/ui/extensibility"
 
 Private Sub PopulateGlobalStrings()
-    DestinationWorkbookPath = CurrentVBProject.fileName
-    Dim WorkbookName                   As String
-    WorkbookName = Mid$(DestinationWorkbookPath, InStrRev(DestinationWorkbookPath, "\") + 1, Len(DestinationWorkbookPath))
-    WorkbookBackupPath = ThisWorkbook.Path & Application.PathSeparator & "zArchive" & Application.PathSeparator & CurrentVBProject.Name & ".Archive." & GetTimestamp
-    WorkbookZippedPath = DestinationWorkbookPath & ".zip"
-    WorkbookUnzippedFolderPath = Mid$(DestinationWorkbookPath, 1, InStrRev(DestinationWorkbookPath, "\")) & "Unzipped " & WorkbookName & ".zip" & Application.PathSeparator
-    Dim WorkbookXMLFolderPath          As String
-    WorkbookXMLFolderPath = WorkbookUnzippedFolderPath & "customUI"
-    CustomUIFilePath = WorkbookXMLFolderPath & Application.PathSeparator & "CustomUI.xml"
-    CustomUI14FilePath = WorkbookXMLFolderPath & Application.PathSeparator & "CustomUI14.xml"
-    RelationshipFilePath = WorkbookUnzippedFolderPath & "_rels" & Application.PathSeparator & ".rels"
-    
-    SourceFolderPathXustomUIXMLPath = BaseFolderPath & "\XML\CustomUI.xml"
-    SourceFolderPathXustomUI14XMLPath = BaseFolderPath & "\XML\CustomUI14.xml"
-    
-    BaseFolderPath = ThisWorkbook.Path & Application.PathSeparator & CurrentVBProject.Name
-    VBComponentBaseFolderPath = BaseFolderPath & Application.PathSeparator & "VBComponents"
-    
+    Dim TimeStamp                           As String
+    TimeStamp = Format$(Now, "yyyymmddhhmmss") & Right$(Format$(Timer, "#0.00"), 2)
+
+    WorkbookFullName = ImportVBProject.fileName
+
+    Dim WorkbookName                        As String
+    WorkbookName = Mid$(WorkbookFullName, InStrRev(WorkbookFullName, "\") + 1, Len(WorkbookFullName))
+
+    WorkbookArchiveFullName = ThisWorkbook.Path & Application.PathSeparator & "zArchive" & Application.PathSeparator & WorkbookName & "." & TimeStamp
+
+    ZipFullName = WorkbookFullName & TimeStamp & ".zip"
+    UnzippedFolderPath = Mid$(WorkbookFullName, 1, InStrRev(WorkbookFullName, "\")) & WorkbookName & TimeStamp & "Unzipped"
+
+    UnzippedFolderCustomUIFullName = UnzippedFolderPath & Application.PathSeparator & "customUI" & Application.PathSeparator & "CustomUI.xml"
+    UnzippedFolderCustomUI14FullName = UnzippedFolderPath & Application.PathSeparator & "customUI" & Application.PathSeparator & "CustomUI14.xml"
+    UnzippedFolderRelationshipFullName = UnzippedFolderPath & Application.PathSeparator & "_rels" & Application.PathSeparator & ".rels"
+
+    ImportFolder = ThisWorkbook.Path & Application.PathSeparator & ImportVBProject.Name
+    ImportVBComponentFolder = ImportFolder & Application.PathSeparator & "VBComponents"
+    ImportCustomUIFullName = ImportFolder & "\XML\CustomUI.xml"
+    ImportCustomUI14FullName = ImportFolder & "\XML\CustomUI14.xml"
+
+    #If Debugging Then
+        Debug.Print "Global Strings:"
+        Debug.Print "TimeStamp                          ", TimeStamp
+        Debug.Print "WorkbookFullName                   ", WorkbookFullName
+        Debug.Print "WorkbookName                       ", WorkbookName
+        Debug.Print "WorkbookArchiveFullName            ", WorkbookArchiveFullName
+        Debug.Print "ZipFullName                        ", ZipFullName
+        Debug.Print "UnzippedFolderPath                 ", UnzippedFolderPath
+        Debug.Print "UnzippedFolderCustomUIFullName     ", UnzippedFolderCustomUIFullName
+        Debug.Print "UnzippedFolderCustomUI14FullName   ", UnzippedFolderCustomUI14FullName
+        Debug.Print "UnzippedFolderRelationshipFullName ", UnzippedFolderRelationshipFullName
+        Debug.Print "ImportFolder                       ", ImportFolder
+        Debug.Print "ImportVBComponentFolder            ", ImportVBComponentFolder
+        Debug.Print "ImportCustomUIFullName             ", ImportCustomUIFullName
+        Debug.Print "ImportCustomUI14FullName           ", ImportCustomUI14FullName
+    #End If
 End Sub
 
 Private Sub UserForm_Initialize()
-    
-    For Each CurrentVBProject In Application.VBE.VBProjects
-        Debug.Print CurrentVBProject.Name
-        If CurrentVBProject.Name <> "VBAProject" Then AddinSelection.AddItem pvargItem:=CurrentVBProject.Name
-    Next CurrentVBProject
+
+    For Each ImportVBProject In Application.VBE.VBProjects
+        Debug.Print ImportVBProject.Name
+        If ImportVBProject.Name <> "VBAProject" Then AddinSelection.AddItem pvargItem:=ImportVBProject.Name
+    Next ImportVBProject
     AddinSelection.AddItem pvargItem:="End of Add-ins"
     AddinSelection.ListIndex = 0
-    
+
 End Sub
 
 Private Sub OkButton_Click()
-    
-    Set CurrentVBProject = Application.VBE.VBProjects.Item(AddinSelection.Value)
+
+    Set ImportVBProject = Application.VBE.VBProjects.Item(AddinSelection.Value)
 
     PopulateGlobalStrings
-    If Not FoldersAndFiles.FolderExists(strDataFolder:=VBComponentBaseFolderPath) Then
-        BaseFolderPath = FoldersAndFiles.GetUserSelectedPath(DefaultPath:=BaseFolderPath, FileType:=msoFileDialogFolderPicker)
+    If Not FoldersAndFiles.FolderExists(strDataFolder:=ImportVBComponentFolder) Then
+        ImportFolder = FoldersAndFiles.GetUserSelectedPath(DefaultPath:=ImportFolder, FileType:=msoFileDialogFolderPicker)
     End If
-    
-    If Right$(BaseFolderPath, Len(BaseFolderPath) - InStrRev(BaseFolderPath, "\", , vbTextCompare)) <> CurrentVBProject.Name Then
+
+    If Right$(ImportFolder, Len(ImportFolder) - InStrRev(ImportFolder, "\", , vbTextCompare)) <> ImportVBProject.Name Then
         If MsgBox(prompt:="Folder name and VB project are not the same. Are you sure you want to import the code into this project?", Buttons:=vbYesNo) = vbNo Then
             Debug.Print "Process stoped by the user."
             Exit Sub
         End If
     End If
-    
-    
-    FoldersAndFiles.FileCreateCopy Source:=DestinationWorkbookPath, Destination:=WorkbookBackupPath 'Create Backup
-    
+
+
+    FoldersAndFiles.FileCreateCopy Source:=WorkbookFullName, Destination:=WorkbookArchiveFullName 'Create Backup
+
     IfThisFileThenCreateTemp
-    
+
     UpdateSelectedVBProjectWithFileComponents
-    If FoldersAndFiles.FileExists(strFileName:=SourceFolderPathXustomUIXMLPath) Or FoldersAndFiles.FileExists(strFileName:=SourceFolderPathXustomUI14XMLPath) Then UpdateXML
-    
+    If FoldersAndFiles.FileExists(strFileName:=ImportCustomUIFullName) Or FoldersAndFiles.FileExists(strFileName:=ImportCustomUI14FullName) Then UpdateXML
+
     DeleteFilesandFolders
     If FoldersAndFiles.FileGetExtension(FilePath:=ThisWorkbook.Name) = "tmp" Then DeleteThisWorkbook
     Unload Me
 End Sub
 
-
 Private Sub IfThisFileThenCreateTemp()
 
-    If CurrentVBProject.fileName = ThisWorkbook.FullName Then
-        Dim ThisWorkbookFullName       As String: ThisWorkbookFullName = ThisWorkbook.FullName
+    If ImportVBProject.fileName = ThisWorkbook.FullName Then
+        Dim ThisWorkbookFullName            As String: ThisWorkbookFullName = ThisWorkbook.FullName
         ThisWorkbook.SaveAs fileName:=ThisWorkbook.Path & Application.PathSeparator & CreateObject("Scripting.FileSystemObject").GetTempName()
-        Dim CurrentWorkbook            As Workbook
+        Dim CurrentWorkbook                 As Workbook
         Set CurrentWorkbook = Workbooks.Open(fileName:=ThisWorkbookFullName)
-        Set CurrentVBProject = CurrentWorkbook.VBProject
+        Set ImportVBProject = CurrentWorkbook.VBProject
     End If
 End Sub
 
-
-
 Private Sub DeleteFilesandFolders()
-    Kill PathName:=WorkbookZippedPath
-    FoldersAndFiles.FolderDelete FolderPath:=WorkbookUnzippedFolderPath
+    Kill PathName:=ZipFullName
+    FoldersAndFiles.FolderDelete FolderPath:=UnzippedFolderPath
 End Sub
 
 Private Sub CancelButton_Click()
@@ -132,27 +147,27 @@ End Sub
 Private Sub DeleteThisWorkbook()
 
     With ThisWorkbook
-.Saved = True
-.ChangeFileAccess xlReadOnly
-Kill .FullName
-.Close False
-End With
+        .Saved = True
+        .ChangeFileAccess xlReadOnly
+        Kill .FullName
+        .Close False
+    End With
 
 End Sub
 
 Private Sub UpdateSelectedVBProjectWithFileComponents()
     DeleteVBAModulesandUserForms
-    LoopThrougFolderandImportCode FolderPath:=BaseFolderPath
+    LoopThrougFolderandImportCode FolderPath:=ImportFolder
 End Sub
 
 Private Sub DeleteVBAModulesandUserForms()
-    Dim CurrentVBComponent             As VBIDE.VBComponent
-    
-    For Each CurrentVBComponent In CurrentVBProject.VBComponents
-        If CurrentVBComponent.Type <> vbext_ct_Document Then CurrentVBProject.VBComponents.Remove CurrentVBComponent
+    Dim CurrentVBComponent                  As VBIDE.VBComponent
+
+    For Each CurrentVBComponent In ImportVBProject.VBComponents
+        If CurrentVBComponent.Type <> vbext_ct_Document Then ImportVBProject.VBComponents.Remove CurrentVBComponent
     Next CurrentVBComponent
 
-    For Each CurrentVBComponent In CurrentVBProject.VBComponents
+    For Each CurrentVBComponent In ImportVBProject.VBComponents
         If CurrentVBComponent.Type <> vbext_ct_Document Then
             Debug.Print "Not all VB Components were deleted. Please review and rerun."
             Debug.Assert False
@@ -163,75 +178,71 @@ Private Sub DeleteVBAModulesandUserForms()
 End Sub
 
 Private Sub LoopThrougFolderandImportCode(ByVal FolderPath As String)
-    Dim FSO                            As FileSystemObject
+    Dim FSO                                 As FileSystemObject
     Set FSO = New FileSystemObject
-    Dim Folder                         As Folder
+    Dim Folder                              As Folder
     Set Folder = FSO.GetFolder(FolderPath:=FolderPath)
-    
-    Dim SubFolder                      As Folder
-    
+
+    Dim SubFolder                           As Folder
+
     For Each SubFolder In Folder.SubFolders
         LoopThrougFolderandImportCode FolderPath:=SubFolder.Path
     Next SubFolder
-    
-    Dim CurrentFile                    As File
-    
+
+    Dim CurrentFile                         As File
+
     For Each CurrentFile In Folder.Files
         If Right$(CurrentFile.Path, 4) = ".bas" Or Right$(CurrentFile.Path, 4) = ".cls" Or Right$(CurrentFile.Path, 4) = ".frm" Then
-            CurrentVBProject.VBComponents.Import fileName:=CurrentFile.Path
+            ImportVBProject.VBComponents.Import fileName:=CurrentFile.Path
             Debug.Print "Imported: ", CurrentFile.Path
         End If
     Next CurrentFile
-    
+
 
 End Sub
 
 Private Sub UpdateXML()
-    
 
-    FoldersAndFiles.FileCreateCopy Source:=DestinationWorkbookPath, Destination:=WorkbookZippedPath
-    FoldersAndFiles.FolderUnzip FolderPath:=WorkbookZippedPath, UnzipFolderPath:=WorkbookUnzippedFolderPath
-    
-    If FoldersAndFiles.FileExists(strFileName:=SourceFolderPathXustomUIXMLPath) Then
+
+    FoldersAndFiles.FileCreateCopy Source:=WorkbookFullName, Destination:=ZipFullName
+    FoldersAndFiles.FolderUnzip FolderPath:=ZipFullName, UnzipFolderPath:=UnzippedFolderPath
+
+    If FoldersAndFiles.FileExists(strFileName:=ImportCustomUIFullName) Then
         AddRelationshipifNeeded CurrentXMLType:=XMLTypeCustomUI
-        FoldersAndFiles.FileCreateCopy Source:=SourceFolderPathXustomUIXMLPath, Destination:=CustomUIFilePath
+        FoldersAndFiles.FileCreateCopy Source:=ImportCustomUIFullName, Destination:=UnzippedFolderCustomUIFullName
     End If
-    If FoldersAndFiles.FileExists(strFileName:=SourceFolderPathXustomUI14XMLPath) Then
+    If FoldersAndFiles.FileExists(strFileName:=ImportCustomUI14FullName) Then
         AddRelationshipifNeeded CurrentXMLType:=XMLTypeCustomUI14
-        FoldersAndFiles.FileCreateCopy Source:=SourceFolderPathXustomUI14XMLPath, Destination:=CustomUI14FilePath
+        FoldersAndFiles.FileCreateCopy Source:=ImportCustomUI14FullName, Destination:=UnzippedFolderCustomUI14FullName
     End If
-    
-    Kill PathName:=WorkbookZippedPath
-    FoldersAndFiles.FolderZip FolderPathSource:=WorkbookUnzippedFolderPath, ZipPathDestination:=WorkbookZippedPath
-    
-    Workbooks.Open(fileName:=DestinationWorkbookPath).Close
-    Kill PathName:=DestinationWorkbookPath
-    FoldersAndFiles.FileCreateCopy Source:=WorkbookZippedPath, Destination:=DestinationWorkbookPath
-    Workbooks.Open fileName:=DestinationWorkbookPath
-    
+
+    Kill PathName:=ZipFullName
+    FoldersAndFiles.FolderZip FolderPathSource:=UnzippedFolderPath, ZipPathDestination:=ZipFullName
+
+    Workbooks.Open(fileName:=WorkbookFullName).Close
+    Kill PathName:=WorkbookFullName
+    FoldersAndFiles.FileCreateCopy Source:=ZipFullName, Destination:=WorkbookFullName
+    Workbooks.Open fileName:=WorkbookFullName
+
 End Sub
 
 Private Sub AddRelationshipifNeeded(ByVal CurrentXMLType As XMLType)
-    If Not CustomUIRelationshipExists(RelationshipsFilePath:=RelationshipFilePath, RelationshipXMLType:=CurrentXMLType) Then
-        AddCustomUIToRels RelationshipsFilePath:=RelationshipFilePath, RelationshipXMLType:=CurrentXMLType
+    If Not CustomUIRelationshipExists(RelationshipsFilePath:=UnzippedFolderRelationshipFullName, RelationshipXMLType:=CurrentXMLType) Then
+        AddCustomUIToRels RelationshipsFilePath:=UnzippedFolderRelationshipFullName, RelationshipXMLType:=CurrentXMLType
     End If
 
 End Sub
 
-Private Function GetTimestamp() As String
-    GetTimestamp = Format$(Now, "yyyymmddhhmmss") & Right$(Format$(Timer, "#0.00"), 2)
-End Function
-
 Private Sub SetUpWorkbookforRibbonUI(ByVal UnzippedWorkbookFolder As String)
-    
-    Dim RelationshipsFilePath          As String
+
+    Dim RelationshipsFilePath               As String
     RelationshipsFilePath = UnzippedWorkbookFolder & "\_rels\.rels"
-    
-    
+
+
     If Not CustomUIRelationshipExists(RelationshipsFilePath:=RelationshipsFilePath, RelationshipXMLType:=XMLTypeCustomUI14) Then
         AddCustomUIToRels RelationshipsFilePath:=RelationshipsFilePath, RelationshipXMLType:=XMLTypeCustomUI14
     End If
-    
+
     '    Dim RelationshipsFileContent       As String
     '    RelationshipsFileContent = FoldersAndFiles.TextFileGetContent(FilePath:=RelationshipsFilePath)
     '    Dim XMLRequiredRelationship        As String
@@ -247,10 +258,10 @@ Private Sub AddCustomUIToRels(ByVal RelationshipsFilePath As String, ByVal Relat
     'Modified by  : Doug Glancy 11/20/2017
     'Macro Purpose: Add the customUI relationship to the rels file
 
-    Dim XMLDoc                         As MSXML2.DOMDocument60
-    Dim XMLElement                     As MSXML2.IXMLDOMNode
-    Dim XMLAttrib                      As MSXML2.IXMLDOMAttribute
-    Dim NamedNodeMap                   As MSXML2.IXMLDOMNamedNodeMap
+    Dim XMLDoc                              As MSXML2.DOMDocument60
+    Dim XMLElement                          As MSXML2.IXMLDOMNode
+    Dim XMLAttrib                           As MSXML2.IXMLDOMAttribute
+    Dim NamedNodeMap                        As MSXML2.IXMLDOMNamedNodeMap
 
     'Create a new XML document
     Set XMLDoc = New MSXML2.DOMDocument60
@@ -303,9 +314,9 @@ End Sub
 
 Private Function CustomUIRelationshipExists(ByVal RelationshipsFilePath As String, ByVal RelationshipXMLType As XMLType) As Boolean
     '@Ignore HungarianNotation
-    Dim oXMLDoc                        As MSXML2.DOMDocument60
-    Dim XmlRelsNamespace               As String
-    Dim RelType                        As String
+    Dim oXMLDoc                             As MSXML2.DOMDocument60
+    Dim XmlRelsNamespace                    As String
+    Dim RelType                             As String
 
     Select Case RelationshipXMLType
         Case XMLType.XMLTypeCustomUI
@@ -320,4 +331,5 @@ Private Function CustomUIRelationshipExists(ByVal RelationshipsFilePath As Strin
     oXMLDoc.Load RelationshipsFilePath
     CustomUIRelationshipExists = Not oXMLDoc.SelectSingleNode("//rels:Relationship[@Type='" & RelType & "']") Is Nothing
 End Function
+
 
