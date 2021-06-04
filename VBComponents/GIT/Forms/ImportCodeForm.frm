@@ -13,7 +13,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
 '@Folder("GIT")
 '@IgnoreModule ArgumentWithIncompatibleObjectType
 #Const Debugging = True
@@ -194,13 +193,31 @@ Private Sub LoopThrougFolderandImportCode(ByVal FolderPath As String)
 
     For Each CurrentFile In Folder.Files
         If Right$(CurrentFile.Path, 4) = ".bas" Or Right$(CurrentFile.Path, 4) = ".cls" Or Right$(CurrentFile.Path, 4) = ".frm" Then
-            ImportVBProject.VBComponents.Import fileName:=CurrentFile.Path
+            Dim CurrentModule As VBIDE.VBComponent
+            Set CurrentModule = ImportVBProject.VBComponents.Import(fileName:=CurrentFile.Path)
+            RemoveBlankLinesAtBeginningofVBComponent CurrentModule:=CurrentModule
             Debug.Print "Imported: ", CurrentFile.Path
         End If
     Next CurrentFile
+    
+End Sub
 
+
+Private Sub RemoveBlankLinesAtBeginningofVBComponent(CurrentModule As VBIDE.VBComponent)
+    
+    With CurrentModule.CodeModule
+        Dim LineofCode                      As Long
+        For LineofCode = 1 To .CountOfLines
+            Debug.Print .Lines(LineofCode, 1)
+            If Not .Lines(LineofCode, 1) = vbNullString Then Exit For
+        Next LineofCode
+        If LineofCode <> 1 Then .DeleteLines StartLine:=1, Count:=LineofCode - 1
+    End With
+    
 
 End Sub
+
+
 
 Private Sub UpdateXML()
 
