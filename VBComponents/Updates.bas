@@ -74,6 +74,7 @@ Private Sub Update()
         Dim ThisworkbookFullName As String
         ThisworkbookFullName = ThisWorkbook.FullName
         ThisWorkbook.ChangeFileAccess Mode:=xlReadOnly
+        Kill PathName:=ThisworkbookFullName
         FoldersAndFiles.FileCreateCopy Source:=Currentfile.Path, Destination:=ThisworkbookFullName
     Else
         Debug.Print "ERROR"
@@ -81,6 +82,14 @@ Private Sub Update()
     End If
 
     Kill PathName:=UpdatedZIPFileLocalPath
+    FoldersAndFiles.FolderDelete FolderPath:=UpdatedFileLocalPath
+    
+    ThisWorkbook.SaveAs FileName:=ThisworkbookFullName & ".tmp"
+    
+    Workbooks.Open FileName:=ThisworkbookFullName
+    
+    ThisWorkbook.Close
+    
     #If Debugging Then
         Debug.Print "Updated"
     #End If
