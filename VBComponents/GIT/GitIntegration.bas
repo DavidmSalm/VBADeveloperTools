@@ -15,13 +15,13 @@ Public Function ValidateRibbonUIXMLFile(ByVal FilePath As String) As Boolean
     Dim FSO                            As FileSystemObject
     Set FSO = New FileSystemObject
     Dim XML                            As String
-    XML = FSO.OpenTextFile(fileName:=FilePath).ReadAll
+    XML = FSO.OpenTextFile(FileName:=FilePath).ReadAll
 
     Dim MSXMLDocument                  As MSXML2.DOMDocument60
     Set MSXMLDocument = New MSXML2.DOMDocument60
     MSXMLDocument.LoadXML bstrxml:=XML
     If Not IsValidRibbonUIXML(XMLDoc:=MSXMLDocument) Then
-        MsgBox prompt:="XML for this file is not valid please refer to the immediate window for more details."
+        MsgBox Prompt:="XML for this file is not valid please refer to the immediate window for more details."
         ValidateRibbonUIXMLFile = False
     Else
         ValidateRibbonUIXMLFile = True

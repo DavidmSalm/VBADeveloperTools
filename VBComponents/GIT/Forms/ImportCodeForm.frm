@@ -48,7 +48,7 @@ Private Sub PopulateGlobalStrings()
     Dim TimeStamp                           As String
     TimeStamp = Format$(Now, "yyyymmddhhmmss") & Right$(Format$(Timer, "#0.00"), 2)
 
-    WorkbookFullName = ImportVBProject.fileName
+    WorkbookFullName = ImportVBProject.FileName
     WorkbookName = Mid$(WorkbookFullName, InStrRev(WorkbookFullName, "\") + 1, Len(WorkbookFullName))
 
     WorkbookArchiveFullName = ThisWorkbook.Path & Application.PathSeparator & "zArchive" & Application.PathSeparator & WorkbookName & "." & TimeStamp
@@ -104,7 +104,7 @@ Private Sub OkButton_Click()
     End If
 
     If Right$(ImportFolder, Len(ImportFolder) - InStrRev(ImportFolder, "\", , vbTextCompare)) <> ImportVBProject.Name Then
-        If MsgBox(prompt:="Folder name and VB project are not the same. Are you sure you want to import the code into this project?", Buttons:=vbYesNo) = vbNo Then
+        If MsgBox(Prompt:="Folder name and VB project are not the same. Are you sure you want to import the code into this project?", Buttons:=vbYesNo) = vbNo Then
             Debug.Print "Process stoped by the user."
             Exit Sub
         End If
@@ -126,11 +126,11 @@ End Sub
 
 Private Sub IfThisFileThenCreateTemp()
 
-    If ImportVBProject.fileName = ThisWorkbook.FullName Then
-        Dim ThisWorkbookFullName            As String: ThisWorkbookFullName = ThisWorkbook.FullName
-        ThisWorkbook.SaveAs fileName:=ThisWorkbook.Path & Application.PathSeparator & CreateObject("Scripting.FileSystemObject").GetTempName()
+    If ImportVBProject.FileName = ThisWorkbook.FullName Then
+        Dim ThisworkbookFullName            As String: ThisworkbookFullName = ThisWorkbook.FullName
+        ThisWorkbook.SaveAs FileName:=ThisWorkbook.Path & Application.PathSeparator & CreateObject("Scripting.FileSystemObject").GetTempName()
         Dim CurrentWorkbook                 As Workbook
-        Set CurrentWorkbook = Workbooks.Open(fileName:=ThisWorkbookFullName)
+        Set CurrentWorkbook = Workbooks.Open(FileName:=ThisworkbookFullName)
         Set ImportVBProject = CurrentWorkbook.VBProject
     End If
 End Sub
@@ -189,16 +189,16 @@ Private Sub LoopThrougFolderandImportCode(ByVal FolderPath As String)
         LoopThrougFolderandImportCode FolderPath:=SubFolder.Path
     Next SubFolder
 
-    Dim CurrentFile                         As File
+    Dim Currentfile                         As File
 
-    For Each CurrentFile In Folder.Files
-        If Right$(CurrentFile.Path, 4) = ".bas" Or Right$(CurrentFile.Path, 4) = ".cls" Or Right$(CurrentFile.Path, 4) = ".frm" Then
+    For Each Currentfile In Folder.Files
+        If Right$(Currentfile.Path, 4) = ".bas" Or Right$(Currentfile.Path, 4) = ".cls" Or Right$(Currentfile.Path, 4) = ".frm" Then
             Dim CurrentModule As VBIDE.VBComponent
-            Set CurrentModule = ImportVBProject.VBComponents.Import(fileName:=CurrentFile.Path)
+            Set CurrentModule = ImportVBProject.VBComponents.Import(FileName:=Currentfile.Path)
             RemoveBlankLinesAtBeginningofVBComponent CurrentModule:=CurrentModule
-            Debug.Print "Imported: ", CurrentFile.Path
+            Debug.Print "Imported: ", Currentfile.Path
         End If
-    Next CurrentFile
+    Next Currentfile
     
 End Sub
 
@@ -237,10 +237,10 @@ Private Sub UpdateXML()
     Kill PathName:=ZipFullName
     FoldersAndFiles.FolderZip FolderPathSource:=UnzippedFolderPath, ZipPathDestination:=ZipFullName
 
-    Workbooks.Open(fileName:=WorkbookFullName).Close
+    Workbooks.Open(FileName:=WorkbookFullName).Close
     Kill PathName:=WorkbookFullName
     FoldersAndFiles.FileCreateCopy Source:=ZipFullName, Destination:=WorkbookFullName
-    Workbooks.Open fileName:=WorkbookFullName
+    Workbooks.Open FileName:=WorkbookFullName
 
 End Sub
 
