@@ -84,7 +84,7 @@ Private Sub Update()
     Kill PathName:=UpdatedZIPFileLocalPath
     FoldersAndFiles.FolderDelete FolderPath:=UpdatedFileLocalPath
     
-    ThisWorkbook.SaveAs FileName:=ThisworkbookFullName & ".tmp"
+    ThisWorkbook.SaveAs FileName:=ThisWorkbook.Path & Application.PathSeparator & CreateObject("Scripting.FileSystemObject").GetTempName()
     
     Workbooks.Open FileName:=ThisworkbookFullName
     
