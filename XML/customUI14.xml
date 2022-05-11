@@ -5,7 +5,7 @@
 				<group id="AddinControl" label="Add-in Control">
 					<button id="ImportCode" label="Import Code from Folder" onAction="ImportCodeSelection" />
 					<button id="ExportCode" label="Export Code to Folder" onAction="ExportCodeSelection" />
-					<button id="UpdateXML" label="ImportXML" />
+<!--					<button id="UpdateXML" label="ImportXML" />
 					<separator id="BestPractices"/>
 					<button id="BestPracticeReport" label="Best Practice Report"/>
 					<splitButton id="Debugging">
@@ -15,7 +15,7 @@
 						</menu>
 					</splitButton>
 					<separator id="Filetools"/>
-					<button id="ToggleIsAddIn" label="Toggle Is AddIn"/>
+					<button id="ToggleIsAddIn" label="Toggle Is AddIn"/> -->
 				</group>
 			</tab>
 		</tabs>
