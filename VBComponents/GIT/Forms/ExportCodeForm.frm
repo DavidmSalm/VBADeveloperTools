@@ -16,7 +16,7 @@ Attribute VB_Exposed = False
 '@Folder("GIT")
 Option Explicit
 
-Private ThisWorkbookPath                    As String
+Private ThisworkbookPath                    As String
 Private BaseFolderPath                      As String
 Private VBComponentBaseFolderPath           As String
 Private VBProjectCompiledFilePath           As String
@@ -53,7 +53,7 @@ Private Sub OkButton_Click()
     ExportAllModulesinVBProject CurrentVBProjectLocal:=CurrentVBProject, FolderPath:=VBComponentBaseFolderPath
     GitRestoreUnchangedForms RepositoryPath:=BaseFolderPath
 
-    FoldersAndFiles.FileCreateCopy Source:=CurrentVBProject.fileName, Destination:=VBProjectCompiledFilePath
+    FoldersAndFiles.FileCreateCopy Source:=CurrentVBProject.FileName, Destination:=VBProjectCompiledFilePath
     Unload Me
 End Sub
 
@@ -62,15 +62,20 @@ Private Sub CancelButton_Click()
 End Sub
 
 Private Sub PopulateGlobalStrings()
-    ThisWorkbookPath = ThisWorkbook.Path
+    ThisworkbookPath = ThisWorkbook.Path
     BaseFolderPath = ThisWorkbook.Path & Application.PathSeparator & CurrentVBProject.Name
     VBComponentBaseFolderPath = BaseFolderPath & Application.PathSeparator & "VBComponents"
     VBProjectCompiledFilePath = BaseFolderPath & Application.PathSeparator & CurrentVBProject.Name & ".xlam"
 End Sub
 
 Private Sub LoopThrougFolderandDeleteCode(ByVal FolderPath As String)
+    If Not FoldersAndFiles.FolderExists(strDataFolder:=FolderPath) Then
+        FoldersAndFiles.MakeDirectory DirectoryPath:=FolderPath
+    End If
+    
     Dim FSO                                 As FileSystemObject
     Set FSO = New FileSystemObject
+    
     Dim Folder                              As Folder
     Set Folder = FSO.GetFolder(FolderPath:=FolderPath)
 
@@ -80,14 +85,14 @@ Private Sub LoopThrougFolderandDeleteCode(ByVal FolderPath As String)
         LoopThrougFolderandDeleteCode FolderPath:=SubFolder.Path
     Next SubFolder
 
-    Dim CurrentFile                         As File
+    Dim Currentfile                         As File
 
-    For Each CurrentFile In Folder.Files
-        If Right$(CurrentFile.Path, 4) = ".bas" Or Right$(CurrentFile.Path, 4) = ".cls" Or Right$(CurrentFile.Path, 4) = ".frm" Or Right$(CurrentFile.Path, 4) = ".frx" Then
-            Debug.Print "Killed: ", CurrentFile.Path
-            Kill CurrentFile.Path
+    For Each Currentfile In Folder.Files
+        If Right$(Currentfile.Path, 4) = ".bas" Or Right$(Currentfile.Path, 4) = ".cls" Or Right$(Currentfile.Path, 4) = ".frm" Or Right$(Currentfile.Path, 4) = ".frx" Then
+            Debug.Print "Killed: ", Currentfile.Path
+            Kill Currentfile.Path
         End If
-    Next CurrentFile
+    Next Currentfile
 
 
 End Sub
@@ -97,10 +102,10 @@ Private Sub ExportAllModulesinVBProject(ByVal CurrentVBProjectLocal As VBIDE.VBP
     Dim CurrentModule                       As VBIDE.VBComponent
     For Each CurrentModule In CurrentVBProjectLocal.VBComponents
         If CurrentModule.Type <> vbext_ct_Document Then
-            Dim fileName                    As String
-            fileName = CreateFileNameforModule(FolderPath:=FolderPath, CurrentModule:=CurrentModule)
-            FoldersAndFiles.MakeDirectory DirectoryPath:=FoldersAndFiles.DirectoryParent(DirectoryPath:=fileName)
-            CurrentModule.Export fileName:=fileName
+            Dim FileName                    As String
+            FileName = CreateFileNameforModule(FolderPath:=FolderPath, CurrentModule:=CurrentModule)
+            FoldersAndFiles.MakeDirectory DirectoryPath:=FoldersAndFiles.DirectoryParent(DirectoryPath:=FileName)
+            CurrentModule.Export FileName:=FileName
         End If
     Next CurrentModule
 

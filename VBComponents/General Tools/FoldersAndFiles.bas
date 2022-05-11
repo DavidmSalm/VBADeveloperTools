@@ -319,3 +319,34 @@ Public Sub FolderDelete(ByVal FolderPath As String)
     FSO.DeleteFolder FolderPath
 
 End Sub
+
+Public Function FindFilesbyName(ByVal FileName As String, ByVal ParentFolderPath As String) As Variant
+    Dim FindFilesbyNamelocal As Collection: Set FindFilesbyNamelocal = New Collection
+    
+    
+    Dim FSO                                 As FileSystemObject
+    Set FSO = New FileSystemObject
+    
+    Dim Folder                              As Folder
+    Set Folder = FSO.GetFolder(FolderPath:=ParentFolderPath)
+
+    Dim SubFolder                           As Folder
+
+    For Each SubFolder In Folder.SubFolders
+        Dim SubFolderFiles As Collection: Set SubFolderFiles = New Collection
+        Set SubFolderFiles = FindFilesbyName(FileName:=FileName, ParentFolderPath:=SubFolder.Path)
+        Dim SubFolderFile As Variant
+        For Each SubFolderFile In SubFolderFiles
+            FindFilesbyNamelocal.Add SubFolderFile
+        Next SubFolderFile
+    Next SubFolder
+
+    Dim Currentfile                         As File
+
+    For Each Currentfile In Folder.Files
+        If Currentfile.Name = FileName Then FindFilesbyNamelocal.Add Currentfile
+    Next Currentfile
+
+    Set FindFilesbyName = FindFilesbyNamelocal
+
+End Function
